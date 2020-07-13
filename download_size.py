@@ -5,16 +5,22 @@ from bs4 import BeautifulSoup
 import re
 import os
 
-#baseUrl = "https://bulkdata.uspto.gov/"
-downloadDirectory = "downloaded"
+BASE_URL = "https://bulkdata.uspto.gov/"
+PATENT_URL = "data/patent/grant/redbook/fulltext/"
+APPLICATION_URL = "data/patent/application/redbook/fulltext/"
 
-def downloadCallback(blocknumber, blocksize, datasize):
-    per = 100.0*blocknumber*blocksize/datasize
+DOWNLOAD_DIRECTORY = "downloaded"
+
+
+# call back function of download
+def download_callback(block_number, block_size, data_size):
+    per = 100.0 * block_number * block_size / data_size
     if per > 100:
         per = 100
-    print('%.2f%%' % per)
+    print('total size %d, %.2f%%' % (data_size, per))
 
-def handlePatentDetailPage(url):
+
+def handle_patent_detail_page(url):
     try:
         html = urlopen(url)
     except HTTPError as e:
@@ -23,58 +29,71 @@ def handlePatentDetailPage(url):
         return None
         
     try:
-        bsObj = BeautifulSoup(html.read(), "lxml")
-        div = bsObj.find("div", {"id":"usptoGlobalHeader"})
+        bs_obj = BeautifulSoup(html.read(), "lxml")
+        div = bs_obj.find("div", {"id":"usptoGlobalHeader"})
         size = 0
-        
 
         for tr in div.findAll("table")[1].findAll("tr"):
-        	#print(tr)
-        	#print(tr.findAll("td")[1].getText())
             tds = tr.findAll("td")
             size = size + int(tds[1].getText())
-            fileUrl = tds[0].a.attrs["href"]
-            print(fileUrl)
-            downloadUrl = url + "/"+ fileUrl
-            print(downloadUrl)
-            if not os.path.exists(downloadDirectory):
-                os.makedirs(downloadDirectory)
+            file_url = tds[0].a.attrs["href"]
+            print(file_url)
+            download_url = url + "/" + file_url
+            local_url = DOWNLOAD_DIRECTORY + "/" + file_url
+            print(download_url)
+
+            if not os.path.exists(DOWNLOAD_DIRECTORY):
+                os.makedirs(DOWNLOAD_DIRECTORY)
+
             try:
-                urlretrieve(downloadUrl, downloadDirectory + "/" + fileUrl, downloadCallback)
+                urlretrieve(download_url, local_url, download_callback)
             except ContentTooShortError as e:
                 print(e)
 
         return size
      
     except AttributeError as e:
-        print (e)
+        print(e)
         return None
     return title
 
-def getTitle(url):
+
+# handle application data
+def handle_application_detail_page(url):
+    return None
+
+
+def handle_home_page(url):
     try:
         html = urlopen(url)
     except HTTPError as e:
-        print (e)
+        print(e)
     try:
-        bsObj = BeautifulSoup(html.read(), "lxml")
-        title = bsObj.head.title.getText()
+        bs_obj = BeautifulSoup(html.read(), "lxml")
+        title = bs_obj.head.title.getText()
         print(title)
-        
-        for link in bsObj.find("div", {"id":"mainArea"}).findAll("a", href=re.compile("/redbook\/fulltext/")):
+
+        # handle patent linkers
+        for link in bs_obj.find("div", {"id": "mainArea"}).findAll("a", href=re.compile(PATENT_URL)):
             if 'href' in link.attrs:
-                
                 print(link.attrs['href'])
-                print(handlePatentDetailPage(link.attrs['href']))
-                
+                print(handle_patent_detail_page(link.attrs['href']))
+
+        # handle application linkers
+        for link in bs_obj.find("div", {"id": "mainArea"}).findAll("a", href=re.compile(APPLICATION_URL)):
+            if 'href' in link.attrs:
+                print(link.attrs['href'])
+                print(handle_patent_detail_page(link.attrs['href']))
         
     except AttributeError as e:
-        print (e)
+        print(e)
         return None
     return title
-    
-title = getTitle("https://bulkdata.uspto.gov/")
-if title == None:
-    print("Title could not befound")
+
+
+ret = handle_home_page(BASE_URL)
+
+if ret is None:
+    print("Home page of bulk data download can't be access!")
 else:
-    print(title)
+    print(ret)
