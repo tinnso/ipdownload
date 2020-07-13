@@ -1,6 +1,6 @@
 from urllib.request import urlretrieve
 from urllib.request import urlopen
-from urllib.error import HTTPError
+from urllib.error import HTTPError, ContentTooShortError
 from bs4 import BeautifulSoup
 import re
 import os
@@ -39,8 +39,10 @@ def handlePatentDetailPage(url):
             print(downloadUrl)
             if not os.path.exists(downloadDirectory):
                 os.makedirs(downloadDirectory)
-
-            urlretrieve(downloadUrl, downloadDirectory + "/" + fileUrl, downloadCallback)
+            try:
+                urlretrieve(downloadUrl, downloadDirectory + "/" + fileUrl, downloadCallback)
+            except ContentTooShortError as e
+                print(e)
 
         return size
      
@@ -53,7 +55,7 @@ def getTitle(url):
     try:
         html = urlopen(url)
     except HTTPError as e:
-        return (e)
+        print (e)
     try:
         bsObj = BeautifulSoup(html.read(), "lxml")
         title = bsObj.head.title.getText()
