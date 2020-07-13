@@ -41,7 +41,7 @@ def handlePatentDetailPage(url):
                 os.makedirs(downloadDirectory)
             try:
                 urlretrieve(downloadUrl, downloadDirectory + "/" + fileUrl, downloadCallback)
-            except ContentTooShortError as e
+            except ContentTooShortError as e:
                 print(e)
 
         return size
