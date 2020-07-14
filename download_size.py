@@ -1,3 +1,5 @@
+import threading
+from urllib.request import Request
 from urllib.request import urlretrieve
 from urllib.request import urlopen
 from urllib.error import HTTPError, ContentTooShortError
@@ -14,10 +16,11 @@ DOWNLOAD_DIRECTORY = "downloaded"
 
 # call back function of download
 def download_callback(block_number, block_size, data_size):
-    per = 100.0 * block_number * block_size / data_size
+    per = 100 * block_number * block_size / data_size
     if per > 100:
         per = 100
-    print('total size %d, %.2f%%' % (data_size, per))
+    if per % 10 == 0:
+        print('total size %d, %.2f%%' % (data_size, per))
 
 
 def handle_patent_detail_page(url):
@@ -46,7 +49,8 @@ def handle_patent_detail_page(url):
                 os.makedirs(DOWNLOAD_DIRECTORY)
 
             try:
-                urlretrieve(download_url, local_url, download_callback)
+                #urlretrieve(download_url, local_url, download_callback)
+                multi_download(download_url, local_url)
             except ContentTooShortError as e:
                 print(e)
 
